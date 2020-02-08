@@ -4,7 +4,7 @@ services:
 
   btcpayserver:
     restart: unless-stopped
-    image: ${BTCPAY_IMAGE:-btcpayserver/btcpayserver:1.0.3.127}
+    image: ${BTCPAY_IMAGE:-btcpayserver/btcpayserver:1.0.3.156}
     expose:
       - "49392"
     environment:
@@ -16,12 +16,21 @@ services:
       BTCPAY_SSHCONNECTION: "root@host.docker.internal"
       BTCPAY_SSHTRUSTEDFINGERPRINTS: ${BTCPAY_SSHTRUSTEDFINGERPRINTS}
       BTCPAY_SSHKEYFILE: ${BTCPAY_SSHKEYFILE}
+      BTCPAY_SSHAUTHORIZEDKEYS: ${BTCPAY_SSHAUTHORIZEDKEYS}
       BTCPAY_DEBUGLOG: btcpay.log
     links:
       - postgres
     volumes:
      - "btcpay_datadir:/datadir"
      - "nbxplorer_datadir:/root/.nbxplorer"
+     - "$<BTCPAY_HOST_SSHAUTHORIZEDKEYS>?:${BTCPAY_SSHAUTHORIZEDKEYS}"
 
 volumes:
-    btcpay_datadir:
+  btcpay_datadir:
+
+required:
+  - "postgres"
+  - "nbxplorer"
+  - "btcpayserver"
+recommended:
+  - "opt-add-tor"

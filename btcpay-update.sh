@@ -31,22 +31,19 @@ if [[ "$1" != "--skip-git-pull" ]]; then
     return
 fi
 
-
-if ! [[ "$OSTYPE" == "darwin"* ]]; then
-	# Not Mac OS
-	# TODO Should we configure logging for Mac OS too? The file path will be different and access rights need to be considered too...
-
-	if ! [ -f "/etc/docker/daemon.json" ]; then
-		echo "{
+if ! [ -f "/etc/docker/daemon.json" ] && [ -w "/etc/docker" ]; then
+    echo "{
 \"log-driver\": \"json-file\",
 \"log-opts\": {\"max-size\": \"5m\", \"max-file\": \"3\"}
 }" > /etc/docker/daemon.json
-		echo "Setting limited log files in /etc/docker/daemon.json"
-	fi
+    echo "Setting limited log files in /etc/docker/daemon.json"
 fi
 
+if ! ./build.sh; then
+    echo "Failed to generate the docker-compose"
+    exit 1
+fi
 
-. ./build.sh
 if [ "$BTCPAYGEN_OLD_PREGEN" == "true" ]; then
     cp Generated/docker-compose.generated.yml $BTCPAY_DOCKER_COMPOSE
     cp Generated/torrc.tmpl "$(dirname "$BTCPAY_DOCKER_COMPOSE")/torrc.tmpl"
@@ -58,10 +55,22 @@ if ! grep -Fxq "export COMPOSE_HTTP_TIMEOUT=\"180\"" "$BASH_PROFILE_SCRIPT"; the
     echo "Adding COMPOSE_HTTP_TIMEOUT=180 in btcpay-env.sh"
 fi
 
+if [[ "$ACME_CA_URI" == "https://acme-v01.api.letsencrypt.org/directory" ]]; then
+    original_acme="$ACME_CA_URI"
+    export ACME_CA_URI="production"
+    echo "Info: Rewriting ACME_CA_URI from $original_acme to $ACME_CA_URI"
+fi
+
+if [[ "$ACME_CA_URI" == "https://acme-staging.api.letsencrypt.org/directory" ]]; then
+    original_acme="$ACME_CA_URI"
+    export ACME_CA_URI="staging"
+    echo "Info: Rewriting ACME_CA_URI from $original_acme to $ACME_CA_URI"
+fi
+
 . helpers.sh
 install_tooling
 btcpay_update_docker_env
 btcpay_up
 
 set +e
-docker image prune -af
+docker image prune -af --filter "label!=org.btcpayserver.image=docker-compose-generator"
