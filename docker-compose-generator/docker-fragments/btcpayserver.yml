@@ -4,7 +4,11 @@ services:
 
   btcpayserver:
     restart: unless-stopped
+<<<<<<< HEAD
     image: ${BTCPAY_IMAGE:-radworx/btcpayserver:v1.0.3.156}
+=======
+    image: ${BTCPAY_IMAGE:-btcpayserver/btcpayserver:1.0.3.156}
+>>>>>>> 32cf928035beae9eb0d1b0545d728a4950de6b32
     expose:
       - "49392"
     environment:
